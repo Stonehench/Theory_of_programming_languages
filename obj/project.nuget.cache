@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "DERN0nIFn5k=",
+  "success": true,
+  "projectFilePath": "/Users/peterstensig/Documents/GitHub/Theory_of_programming_languages/Theory_of_Programming_Languages.fsproj",
+  "expectedPackageFiles": [
+    "/Users/peterstensig/.nuget/packages/fsharp.core/8.0.400/fsharp.core.8.0.400.nupkg.sha512"
+  ],
+  "logs": []
+}
