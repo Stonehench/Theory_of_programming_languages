@@ -3,25 +3,21 @@ use std::io::{self, Read};
 
 // Function to evaluate an expression
 fn evaluate(expr: &str, vars: &HashMap<&str, i64>) -> i64 {
-    let binding = expr
-        .replace("(", " ( ")
-        .replace(")", " ) ");
-    let tokens: Vec<&str> = binding
-        .split_whitespace()
-        .collect();
+    let binding = expr.replace("(", " ( ").replace(")", " ) ");
+    let tokens: Vec<&str> = binding.split_whitespace().collect();
 
     let mut stack = vec![];
     let mut i = 0;
-    
+
     fn parse(tokens: &[&str], i: &mut usize, vars: &HashMap<&str, i64>) -> i64 {
         if tokens[*i] == "(" {
-            *i += 1;  // Skip '('
+            *i += 1; // Skip '('
             let op = tokens[*i];
-            *i += 1;  // Move to first argument
-            
+            *i += 1; // Move to first argument
+
             let left = parse(tokens, i, vars);
             let right = parse(tokens, i, vars);
-            *i += 1;  // Skip ')'
+            *i += 1; // Skip ')'
 
             match op {
                 "add" => left + right,
@@ -36,7 +32,9 @@ fn evaluate(expr: &str, vars: &HashMap<&str, i64>) -> i64 {
             // It's a variable like `x`
             let var = tokens[*i];
             *i += 1;
-            *vars.get(var).expect(&format!("Undefined variable: {}", var))
+            *vars
+                .get(var)
+                .expect(&format!("Undefined variable: {}", var))
         }
     }
 
@@ -56,9 +54,15 @@ fn main() {
 
     // Read input from stdin
     let mut input = String::new();
-    io::stdin().read_to_string(&mut input).expect("Failed to read input");
+    io::stdin()
+        .read_to_string(&mut input)
+        .expect("Failed to read input");
 
     // Evaluate and print result
-    let result = evaluate(&input.trim(), &vars);
-    println!("{}", result);
+    if input.starts_with("\"") {
+        print!("{}", input);
+    } else {
+        let result = evaluate(&input.trim(), &vars);
+        println!("{}", result);
+    }
 }
