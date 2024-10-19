@@ -45,5 +45,6 @@ ok cp3ex1.417 18
 ok cp3ex2.417 1
 ok cp3ex3.417 90
 ok cp3ex4.417 3628800
+ok fibonachi.417 55
 
 echo "All tests passed!"
