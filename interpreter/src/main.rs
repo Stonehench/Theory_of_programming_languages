@@ -1,154 +1,329 @@
-use serde_json::Value;
-use std::collections::HashMap;
-use std::io::{self, Read};
+use serde_derive::Deserialize;
+use std::{
+    collections::HashMap,
+    io::{self, Read},
+};
 
-// Function to evaluate a boolean expression
-fn evaluate_bool(
-    expr: &Value,
-    vars: &HashMap<&str, Value>,
-) -> bool {
-    if let Some(identifier) = expr.get("Identifier").and_then(|id| id.as_str()) {
-        match identifier {
-            "true" => true,
-            "false" => false,
-            _ => panic!("Not a known boolean expression: {}", expr),
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "PascalCase")]
+enum Expr {
+    Application(Vec<Expr>),
+    Identifier(String),
+    Cond(Vec<Expr>),
+    Block(Vec<Expr>),
+    Clause(Vec<Expr>),
+    Number(i64),
+    String(String),
+    Parameters(Vec<Expr>),
+    Lambda(Vec<Expr>),
+}
+
+
+
+#[derive(Debug, Clone)]
+enum ResultValue {
+    Number(i64),
+    Bool(bool),
+    String(String),
+    Func(usize, fn(Vec<ResultValue>) -> Result<ResultValue, String>),
+    Lambda(Vec<String>, Box<Expr>, Env),
+}
+
+impl std::fmt::Display for ResultValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResultValue::Number(n) => write!(f, "{}", n),
+            ResultValue::Bool(b) => write!(f, "{}", b),
+            ResultValue::String(s) => write!(f, "{}", s),
+            ResultValue::Func(_, _) => write!(f, "<function>"),
+            ResultValue::Lambda(_, _, _) => write!(f, "<lambda>"),
         }
-    } else if let Some(application) = expr.get("Application") {
-        if let Some(operator) = application
-            .get(0)
-            .and_then(|id| id.get("Identifier"))
-            .and_then(|id| id.as_str())
-        {
-            let left = evaluate_expr(application.get(1).unwrap(), vars);
-            if operator == "zero?" {
-                return left == 0;
-            }
-            let right = evaluate_expr(application.get(2).unwrap(), vars);
-            match operator {
-                "=" => left == right,
-                "<" => left < right,
-                "<=" => left <= right,
-                ">" => left > right,
-                ">=" => left >= right,
-                _ => panic!("Unknown boolean operator: {}", operator),
-            }
-        } else {
-            panic!("Invalid boolean expression: {:?}", expr);
-        }
-    } else {
-        panic!("Not a known boolean expression: {:?}", expr);
     }
 }
 
-// Function to evaluate an expression
-fn evaluate_expr(expr: &Value, vars: &HashMap<&str, Value>) -> i64 {
-    // Check if the expression is an application
-    if let Some(application) = expr.get("Application") {
-        if let Some(lambda) = application.get(0).and_then(|id| id.get("Lambda")) {
-            // Handle lambda expressions
-            if let Some(parameters) = lambda.get(0).and_then(|id| id.get("Parameters")) {
-                // Create a new variable map with the parameters
-                let mut new_vars = vars.clone();
-                for (i, parameter) in parameters.as_array().unwrap().iter().enumerate() {
-                    if let Some(identifier) = parameter.get("Identifier").and_then(|id| id.as_str())
-                    {
-                        new_vars.insert(
-                            identifier,
-                            application.get(i + 1).unwrap().clone()
-                        );
-                    }
+#[derive(Debug, Clone)]
+struct Env {
+    vars: HashMap<String, ResultValue>,
+    builtins: HashMap<String, ResultValue>,
+}
+
+impl Env {
+    fn new() -> Self {
+        let mut vars = HashMap::new();
+        // Initialize the environment with Roman numerals
+        vars.insert("x".to_string(), ResultValue::Number(10));
+        vars.insert("v".to_string(), ResultValue::Number(5));
+        vars.insert("i".to_string(), ResultValue::Number(1));
+
+        // Initialize the environment with built-in functions
+        let mut builtins = HashMap::new();
+        builtins.insert(
+            "add".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
                 }
-                // Evaluate the lambda expression
-                if let Some(block) = lambda.get(1).and_then(|id| id.get("Block")) {
-                    return evaluate_expr(block.get(0).unwrap(), &new_vars);
-                } else {
-                    panic!("Lambda expression has no block: {:?}", lambda);
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a + b)),
+                    _ => Err("Invalid arguments".to_string()),
                 }
-            }
-        }
-        if let Some(identifier) = application
-            .get(0)
-            .and_then(|id| id.get("Identifier"))
-            .and_then(|id| id.as_str())
-        {
-            // Check if the identifier is a variable
-            if let Some(value) = vars.get(identifier) {
-                return value.as_i64().expect("Can't return a number"); // Return the value of the variable as i64
-            } else {
-                // Handle procedures like "add", "sub", etc.
-                match identifier {
-                    "add" => {
-                        // Iterate over the elements and sum them up
-                        let mut sum = 0;
-                        for item in application.as_array().unwrap().iter().skip(1) {
-                            sum += evaluate_expr(item, vars);
-                        }
-                        return sum;
-                    }
-                    "sub" => {
-                        // Iterate over the elements and subtract them
-                        let mut difference = evaluate_expr(application.get(1).unwrap(), vars);
-                        for item in application.as_array().unwrap().iter().skip(2) {
-                            difference -= evaluate_expr(item, vars);
-                        }
-                        return difference;
-                    }
-                    "mul" => {
-                        // Iterate over the elements and multiply them
-                        let mut product = 1;
-                        for item in application.as_array().unwrap().iter().skip(1) {
-                            product *= evaluate_expr(item, vars);
-                        }
-                        return product;
-                    }
-                    "div" => {
-                        // Iterate over the elements and divide them
-                        let mut quotient = 1;
-                        for item in application.as_array().unwrap().iter().skip(1) {
-                            quotient /= evaluate_expr(item, vars);
-                        }
-                        return quotient;
-                    }
-                    _ => panic!("Unknown procedure: {}", identifier),
+            }),
+        );
+        builtins.insert(
+            "sub".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
                 }
-            }
-        }
-    } else if expr.is_object() {
-        // Handle conditional expressions
-        if let Some(cond) = expr.get("Cond") {
-            for clause in cond.as_array().unwrap() {
-                if let Some(clause_array) = clause.get("Clause").and_then(|c| c.as_array()) {
-                    if let Some(clause) = clause_array.get(0) {
-                        if evaluate_bool(clause, vars) {
-                            return evaluate_expr(clause_array.get(1).unwrap(), vars);
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a - b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            "mul".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a * b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            "div".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        if b == 0 {
+                            Err("Division by zero".to_string())
+                        } else {
+                            Ok(ResultValue::Number(a / b))
                         }
                     }
+                    _ => Err("Invalid arguments".to_string()),
                 }
-            }
-        }
-        // If it's an object with an "Identifier", treat it as a variable reference
-        if let Some(identifier) = expr.get("Identifier").and_then(|id| id.as_str()) {
-            if let Some(value) = vars.get(identifier) {
-                return value.as_i64().expect("Expected a number");
-            } 
-            else {
-                println!("{}", identifier);
-                return i64::MIN;
-            }
-        }
-    } else if expr.is_i64() {
-        // If it's a direct number, return it
-        return expr.as_i64().unwrap();
+            }),
+        );
+        builtins.insert(
+            "zero?".to_string(),
+            ResultValue::Func(1, |args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Number(n) => Ok(ResultValue::Bool(n == 0)),
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            "=".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a == b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            "<".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a < b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            ">".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a > b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            ">=".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a >= b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            "<=".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a <= b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        
+        Self { vars, builtins }
     }
-    panic!("{:?}", expr);
+
+    fn get_vars(&self, name: &str) -> Option<ResultValue> {
+        self.vars.get(name).cloned()
+    }
+
+    fn insert_vars(&mut self, name: String, value: ResultValue) {
+        self.vars.insert(name, value);
+    }
+}
+
+fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
+    match expr {
+        Expr::Number(n) => Ok(ResultValue::Number(n)),
+        Expr::String(s) => Ok(ResultValue::String(s)),
+
+        Expr::Application(mut args) => {
+            let func = eval_expr(args.remove(0), env)?;
+            if env.builtins.contains_key(&func.to_string()) {
+                return apply_function(env.builtins[&func.to_string()].clone(), args, env);
+            }
+            apply_function(func, args, env)
+        }
+
+        Expr::Identifier(value) => match env.get_vars(&value) {
+            Some(val) => Ok(val),
+            None => Ok(ResultValue::String(value)),
+        },
+
+        Expr::Block(exprs) => {
+            let mut result = ResultValue::Number(0);
+            for expr in exprs {
+                result = eval_expr(expr, env)?;
+            }
+            Ok(result)
+        }
+
+        Expr::Cond(clauses) => {
+            for clause in clauses {
+                match clause {
+                    Expr::Clause(mut clause) => {
+                        if clause.len() != 2 {
+                            return Err("Each clause must have exactly 2 expressions".to_string());
+                        }
+                        let cond = eval_expr(clause.remove(0), env)?;
+                        if cond.to_string() == "true" {
+                            return eval_expr(clause.remove(0), env);
+                        } else {
+                            clause.remove(0); // Remove the second expression if condition is false
+                        }
+                    }
+                    _ => return Err("Invalid clause".to_string()),
+                }
+            }
+            Err("No true clause".to_string())
+        }
+
+        Expr::Clause(_) => Err("Invalid clause not wrapped in a cond".to_string()),
+
+        Expr::Parameters(params) => {
+            let mut param_names = Vec::new();
+            for param in params {
+                if let Expr::Identifier(name) = param {
+                    param_names.push(name);
+                } else {
+                    return Err("Invalid parameter".to_string());
+                }
+            }
+            Ok(ResultValue::Lambda(param_names, Box::new(Expr::Block(vec![])), env.clone()))
+        }
+
+        Expr::Lambda(mut body) => {
+            if body.len() != 2 {
+                return Err("Lambda must have exactly 2 expressions".to_string());
+            }
+            let params = body.remove(0);
+            let body_expr = body.remove(0);
+            let param_names = if let Expr::Parameters(params) = params {
+                params.into_iter().map(|param| {
+                    if let Expr::Identifier(name) = param {
+                        Ok(name)
+                    } else {
+                        Err("Invalid parameter".to_string())
+                    }
+                }).collect::<Result<Vec<_>, _>>()?
+            } else {
+                return Err("Invalid parameters".to_string());
+            };
+            Ok(ResultValue::Lambda(param_names, Box::new(body_expr), env.clone()))
+        }
+    }
+}
+
+fn apply_function(f: ResultValue, args: Vec<Expr>, env: &mut Env) -> Result<ResultValue, String> {
+    match f {
+        ResultValue::Func(args_length, func) => {
+            if args.len() != args_length {
+                return Err(format!("Expected {} arguments", args_length));
+            }
+
+            let arg_values = args
+                .into_iter()
+                .map(|arg| eval_expr(arg, env))
+                .collect::<Result<Vec<_>, _>>()?;
+
+            func(arg_values)
+        }
+        ResultValue::Lambda(param_names, body, mut lambda_env) => {
+            if args.len() != param_names.len() {
+                return Err(format!("Expected {} arguments", param_names.len()));
+            }
+
+            // Evaluate arguments and extend the environment
+            for (param_name, arg) in param_names.into_iter().zip(args.into_iter()) {
+                let arg_value = eval_expr(arg, env)?;
+                lambda_env.insert_vars(param_name, arg_value);
+            }
+
+            // Evaluate the body of the lambda in the extended environment
+            eval_expr(*body, &mut lambda_env)
+        }
+        _ => Err("Not a function".to_string()),
+    }
 }
 
 fn main() {
-    // Variable map where `x`, `v`, and `i` are pre-defined
-    let mut vars: HashMap<&str, Value> = HashMap::new();
-    vars.insert("x", Value::Number(10.into()));
-    vars.insert("v", Value::Number(5.into()));
-    vars.insert("i", Value::Number(1.into()));
+    // Simulating the environment being initialized
+    let mut env = Env::new();
 
     // Read input from stdin
     let mut input = String::new();
@@ -156,15 +331,13 @@ fn main() {
         .read_to_string(&mut input)
         .expect("Failed to read input");
 
+    // println!("{}", input);
     // Parse the input as JSON
-    let json_input: serde_json::Value =
-        serde_json::from_str(&input).expect("JSON was not well-formatted");
+    let expr: Expr = serde_json::from_str(&input).expect("JSON was not well-formatted");
 
-    // Evaluate and print result
-    let result = evaluate_expr(&json_input, &vars);
-    if result != i64::MIN {
-        println!("{}", result);
+    // Evaluate the expression
+    match eval_expr(expr, &mut env) {
+        Ok(result) => println!("{}", result),
+        Err(e) => eprintln!("Error: {:?}", e),
     }
 }
-
-

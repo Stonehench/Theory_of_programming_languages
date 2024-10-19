@@ -4,9 +4,6 @@
 # --> Change this as needed.
 parse="$(command -v parse)"
 
-# My interpreter requires S-expression input, not JSON
-parse="$(command -v parse) -s"
-
 
 # ------------------------------------------------------------------
 
@@ -14,14 +11,14 @@ parse="$(command -v parse) -s"
 # make sure it returns the right answer.  The only output should be
 # the value produced by the input program.
 function ok {
-    output=$parse < "$1" | cargo run --quiet
+    output=$parse < "$1" | ./run.sh
     code=$?
-    if [[ $code == 0 ]]; then
+    if [[ $code != 0 ]]; then
 	echo Interpreter returned error code for input file "$1"
 	echo Expected success and output "$2"
 	exit $code
     fi
-    if [[ "$output" == "$1" ]]; then
+    if [[ "$output" != "$2" ]]; then
 	echo Interpreter produced unexpected output: "$output"
 	echo Expected this output: "$2"
     fi
@@ -31,7 +28,7 @@ function ok {
 # output is not checked because it should be a human-readable message,
 # but the status code must be non-zero.
 function err {
-    $parse < "$1" | cargo run --quiet
+    $parse < "$1" | ./run.sh
     code=$?
     if [[ $code == 0 ]]; then
 	echo "Interpreter (and parser) succeeded but should not have!"
@@ -39,6 +36,8 @@ function err {
 	exit -1
     fi
 }
+
+./build.sh
 
 ok cp3ex1.417 18
 ok cp3ex2.417 1
