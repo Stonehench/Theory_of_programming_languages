@@ -37,7 +37,7 @@ impl std::fmt::Display for ResultValue {
             ResultValue::Bool(b) => write!(f, "{}", b),
             ResultValue::String(s) => write!(f, "{}", s),
             ResultValue::Func(_, _) => write!(f, "<function>"),
-            ResultValue::Lambda(_, _, _) => write!(f, "<lambda>"),
+            ResultValue::Lambda(p, b, _) => write!(f, "<lambda {:?} {:?}>", p, b),
         }
     }
 }
@@ -194,7 +194,18 @@ impl Env {
                 }
             }),
         );
-        
+        builtins.insert(
+            "print".to_string(),
+            ResultValue::Func(1, |args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                println!("{}", args[0]);
+                Ok(ResultValue::Number(0))
+            }),
+        );
+
         Self { vars, builtins }
     }
 
@@ -208,6 +219,9 @@ impl Env {
 }
 
 fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
+    // // backtrace for debugging
+    // println!("{:?}", expr);
+
     match expr {
         Expr::Number(n) => Ok(ResultValue::Number(n)),
         Expr::String(s) => Ok(ResultValue::String(s)),
