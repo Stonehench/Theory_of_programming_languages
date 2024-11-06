@@ -1,12 +1,11 @@
 use serde_derive::Deserialize;
 use std::{
-    collections::HashMap,
-    io::{self, Read},
+    collections::HashMap, io::{self, Read}
 };
 
 
 #[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "PascalCase")]
+#[serde(rename_all = "PascalCase")] 
 enum Expr {
     Application(Vec<Expr>),
     Identifier(String),
@@ -17,6 +16,8 @@ enum Expr {
     String(String),
     Parameters(Vec<Expr>),
     Lambda(Vec<Expr>),
+    Let(Box<Expr>, Box<Expr>, Box<Expr>),
+    Define(Box<Expr>, Box<Expr>),
 }
 
 
@@ -117,6 +118,19 @@ impl Env {
             }),
         );
         builtins.insert(
+            "pow".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a.pow(b as u32))),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
             "zero?".to_string(),
             ResultValue::Func(1, |args| {
                 if args.len() != 1 {
@@ -205,6 +219,7 @@ impl Env {
                 Ok(ResultValue::Number(0))
             }),
         );
+        
 
         Self { vars, builtins }
     }
@@ -269,24 +284,14 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
 
         Expr::Clause(_) => Err("Invalid clause not wrapped in a cond".to_string()),
 
-        Expr::Parameters(params) => {
-            let mut param_names = Vec::new();
-            for param in params {
-                if let Expr::Identifier(name) = param {
-                    param_names.push(name);
-                } else {
-                    return Err("Invalid parameter".to_string());
-                }
-            }
-            Ok(ResultValue::Lambda(param_names, Box::new(Expr::Block(vec![])), env.clone()))
-        }
+        Expr::Parameters(_) => Err("Invalid parameters not wrapped in a lambda".to_string()),
 
-        Expr::Lambda(mut body) => {
-            if body.len() != 2 {
+        Expr::Lambda(mut args) => {
+            if args.len() != 2 {
                 return Err("Lambda must have exactly 2 expressions".to_string());
             }
-            let params = body.remove(0);
-            let body_expr = body.remove(0);
+            let params = args.remove(0);
+            let body_expr = args.remove(0);
             let param_names = if let Expr::Parameters(params) = params {
                 params.into_iter().map(|param| {
                     if let Expr::Identifier(name) = param {
@@ -299,6 +304,29 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
                 return Err("Invalid parameters".to_string());
             };
             Ok(ResultValue::Lambda(param_names, Box::new(body_expr), env.clone()))
+        }
+
+        Expr::Let(name, value, body) => {
+            let name = if let Expr::Identifier(name) = *name {
+                name
+            } else {
+                return Err("Invalid variable name".to_string());
+            };
+            let value = eval_expr(*value, env)?;
+            env.insert_vars(name, value);
+            eval_expr(*body, env)
+        }
+
+        Expr::Define(name, value) => {
+            let name = if let Expr::Identifier(name) = *name {
+                name
+            } else {
+                return Err("Invalid variable name".to_string());
+            };
+            let value = eval_expr(*value, env)?;
+
+            env.insert_vars(name, value);
+            Ok(ResultValue::Number(0))
         }
     }
 }
@@ -325,11 +353,18 @@ fn apply_function(f: ResultValue, args: Vec<Expr>, env: &mut Env) -> Result<Resu
             // Evaluate arguments and extend the environment
             for (param_name, arg) in param_names.into_iter().zip(args.into_iter()) {
                 let arg_value = eval_expr(arg, env)?;
+                // Lexical scope
                 lambda_env.insert_vars(param_name, arg_value);
+
+                // Dynamic scope
+                // env.insert_vars(param_name, arg_value);
             }
 
-            // Evaluate the body of the lambda in the extended environment
+            // Evaluate the body of the lambda in the extended environment (lexical scope)
             eval_expr(*body, &mut lambda_env)
+
+            // Evaluate the body of the lambda in the extended environment (dynamic scope)
+            // eval_expr(*body, env)
         }
         _ => Err("Not a function".to_string()),
     }

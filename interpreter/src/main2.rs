@@ -6,7 +6,7 @@ use std::{
 
 
 #[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "PascalCase", untagged)]
+#[serde(rename_all = "PascalCase")]
 enum Expr {
     Application(Vec<Expr>),
     Identifier(String),
@@ -14,7 +14,6 @@ enum Expr {
     Block(Vec<Expr>),
     Clause(Vec<Expr>),
     Number(i64),
-    Bool(bool),
     String(String),
     Parameters(Vec<Expr>),
     Lambda(Vec<Expr>),
@@ -22,12 +21,11 @@ enum Expr {
 
 
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 enum ResultValue {
     Number(i64),
     Bool(bool),
     String(String),
-    #[serde(skip_deserializing)]
     Func(usize, fn(Vec<ResultValue>) -> Result<ResultValue, String>),
     Lambda(Vec<String>, Box<Expr>, Env),
 }
@@ -39,12 +37,12 @@ impl std::fmt::Display for ResultValue {
             ResultValue::Bool(b) => write!(f, "{}", b),
             ResultValue::String(s) => write!(f, "{}", s),
             ResultValue::Func(_, _) => write!(f, "<function>"),
-            ResultValue::Lambda(_, _, _) => write!(f, "<lambda>"),
+            ResultValue::Lambda(p, b, _) => write!(f, "<lambda {:?} {:?}>", p, b),
         }
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 struct Env {
     vars: HashMap<String, ResultValue>,
     builtins: HashMap<String, ResultValue>,
@@ -119,6 +117,19 @@ impl Env {
             }),
         );
         builtins.insert(
+            "pow".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a.pow(b as u32))),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
             "zero?".to_string(),
             ResultValue::Func(1, |args| {
                 if args.len() != 1 {
@@ -131,6 +142,103 @@ impl Env {
                 }
             }),
         );
+        builtins.insert(
+            "=".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a == b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            "<".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a < b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            ">".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a > b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            ">=".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a >= b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            "<=".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a <= b)),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            "print".to_string(),
+            ResultValue::Func(1, |args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                println!("{}", args[0]);
+                Ok(ResultValue::Number(0))
+            }),
+        );
+        // builtins.insert(
+        //     "define".to_string(),
+        //     ResultValue::Func(2, |args| {
+        //         if args.len() != 2 {
+        //             return Err("Expected exactly 2 arguments".to_string());
+        //         }
+
+        //         match (&args[0], &args[1]) {
+        //             (ResultValue::String(name), value) => {
+        //                 self.insert_vars(name.clone(), value.clone());
+        //                 Ok(value.clone())
+        //             }
+        //             _ => Err("Invalid arguments".to_string()),
+        //         }
+        //     }),
+        // );
+        // builtins.insert(
+        //     "let".to_string(),
+        //     // TODO: Implement let
+        //     todo!()
+        // );
 
         Self { vars, builtins }
     }
@@ -145,12 +253,12 @@ impl Env {
 }
 
 fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
+    // // backtrace for debugging
+    // println!("{:?}", expr);
+
     match expr {
-        Expr::Number(n) => {
-            println!("Got a number: {}", n);
-            Ok(ResultValue::Number(n))},
+        Expr::Number(n) => Ok(ResultValue::Number(n)),
         Expr::String(s) => Ok(ResultValue::String(s)),
-        Expr::Bool(b) => Ok(ResultValue::Bool(b)),
 
         Expr::Application(mut args) => {
             let func = eval_expr(args.remove(0), env)?;
@@ -162,7 +270,7 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
 
         Expr::Identifier(value) => match env.get_vars(&value) {
             Some(val) => Ok(val),
-            None => Err(format!("Unknown variable: {}", value)),
+            None => Ok(ResultValue::String(value)),
         },
 
         Expr::Block(exprs) => {
@@ -181,7 +289,7 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
                             return Err("Each clause must have exactly 2 expressions".to_string());
                         }
                         let cond = eval_expr(clause.remove(0), env)?;
-                        if let ResultValue::Bool(true) = cond {
+                        if cond.to_string() == "true" {
                             return eval_expr(clause.remove(0), env);
                         } else {
                             clause.remove(0); // Remove the second expression if condition is false
@@ -207,12 +315,12 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
             Ok(ResultValue::Lambda(param_names, Box::new(Expr::Block(vec![])), env.clone()))
         }
 
-        Expr::Lambda(mut body) => {
-            if body.len() != 2 {
+        Expr::Lambda(mut args) => {
+            if args.len() != 2 {
                 return Err("Lambda must have exactly 2 expressions".to_string());
             }
-            let params = body.remove(0);
-            let body_expr = body.remove(0);
+            let params = args.remove(0);
+            let body_expr = args.remove(0);
             let param_names = if let Expr::Parameters(params) = params {
                 params.into_iter().map(|param| {
                     if let Expr::Identifier(name) = param {
@@ -228,21 +336,6 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
         }
     }
 }
-
-// // For later use
-// fn eval_bool(lhs: Value, rhs: Value, op: &str) -> Result<Value, String> {
-//     match (lhs, rhs) {
-//         (Value::Number(l), Value::Number(r)) => match op {
-//             "=" => Ok(Value::Bool(l == r)),
-//             "<" => Ok(Value::Bool(l < r)),
-//             "<=" => Ok(Value::Bool(l <= r)),
-//             ">" => Ok(Value::Bool(l > r)),
-//             ">=" => Ok(Value::Bool(l >= r)),
-//             _ => Err("Invalid operator".to_string()),
-//         },
-//         _ => Err("Invalid operands".to_string()),
-//     }
-// }
 
 fn apply_function(f: ResultValue, args: Vec<Expr>, env: &mut Env) -> Result<ResultValue, String> {
     match f {
@@ -286,13 +379,13 @@ fn main() {
         .read_to_string(&mut input)
         .expect("Failed to read input");
 
-    println!("{}", input);
+    // println!("{}", input);
     // Parse the input as JSON
     let expr: Expr = serde_json::from_str(&input).expect("JSON was not well-formatted");
 
     // Evaluate the expression
     match eval_expr(expr, &mut env) {
-        Ok(result) => println!("{:?}", result),
+        Ok(result) => println!("{}", result),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 }
