@@ -1,33 +1,34 @@
 use serde_derive::Deserialize;
 use std::{
-    collections::HashMap, io::{self, Read}
+    collections::HashMap,
+    io::{self, Read},
 };
 
 // Define the expression types that can be parsed from JSON
 #[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "PascalCase")] 
+#[serde(rename_all = "PascalCase")]
 enum Expr {
-    Application(Vec<Expr>),                 // Function application
-    Identifier(String),                     // Variable or function name
-    Cond(Vec<Expr>),                        // Conditional expression
-    Block(Vec<Expr>),                       // Block of expressions
-    Clause(Vec<Expr>),                      // Clause in a conditional expression
-    Number(i64),                            // Integer number
-    String(String),                         // String literal
-    Parameters(Vec<Expr>),                  // Parameters for a lambda function
-    Lambda(Vec<Expr>),                      // Lambda function
-    Let(Box<Expr>, Box<Expr>, Box<Expr>),   // Let binding
-    Define(Box<Expr>, Box<Expr>),           // Define a variable or function
+    Application(Vec<Expr>),               // Function application
+    Identifier(String),                   // Variable or function name
+    Cond(Vec<Expr>),                      // Conditional expression
+    Block(Vec<Expr>),                     // Block of expressions
+    Clause(Vec<Expr>),                    // Clause in a conditional expression
+    Number(i64),                          // Integer number
+    String(String),                       // String literal
+    Parameters(Vec<Expr>),                // Parameters for a lambda function
+    Lambda(Vec<Expr>),                    // Lambda function
+    Let(Box<Expr>, Box<Expr>, Box<Expr>), // Let binding
+    Define(Box<Expr>, Box<Expr>),         // Define a variable or function
 }
 
 // Define the possible result values of evaluating expressions
 #[derive(Debug, Clone)]
 enum ResultValue {
-    Number(i64),                                                        // Integer number
-    Bool(bool),                                                         // Boolean value
-    String(String),                                                     // String value
-    Func(usize, fn(Vec<ResultValue>) -> Result<ResultValue, String>),   // Built-in function
-    Lambda(Vec<String>, Box<Expr>, Env),                                // Lambda function
+    Number(i64),                                                      // Integer number
+    Bool(bool),                                                       // Boolean value
+    String(String),                                                   // String value
+    Func(usize, fn(Vec<ResultValue>) -> Result<ResultValue, String>), // Built-in function
+    Lambda(Vec<String>, Box<Expr>, Env),                              // Lambda function
 }
 
 // Implement display formatting for ResultValue
@@ -46,7 +47,7 @@ impl std::fmt::Display for ResultValue {
 // Define the environment that holds variables and built-in functions
 #[derive(Debug, Clone)]
 struct Env {
-    vars: HashMap<String, ResultValue>,     // Variables defined in the environment
+    vars: HashMap<String, ResultValue>, // Variables defined in the environment
     builtins: HashMap<String, ResultValue>, // Built-in functions
 }
 
@@ -61,6 +62,8 @@ impl Env {
 
         // Initialize the environment with built-in functions
         let mut builtins = HashMap::new();
+
+        // Built-in function for addition
         builtins.insert(
             "add".to_string(),
             ResultValue::Func(2, |args| {
@@ -69,11 +72,15 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a + b)),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Number(a + b))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
         );
+
+        // Built-in function for subtraction
         builtins.insert(
             "sub".to_string(),
             ResultValue::Func(2, |args| {
@@ -82,11 +89,15 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a - b)),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Number(a - b))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
         );
+
+        // Built-in function for multiplication
         builtins.insert(
             "mul".to_string(),
             ResultValue::Func(2, |args| {
@@ -95,11 +106,15 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a * b)),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Number(a * b))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
         );
+
+        // Built-in function for division
         builtins.insert(
             "div".to_string(),
             ResultValue::Func(2, |args| {
@@ -119,6 +134,8 @@ impl Env {
                 }
             }),
         );
+
+        // Built-in function for exponentiation
         builtins.insert(
             "pow".to_string(),
             ResultValue::Func(2, |args| {
@@ -127,11 +144,15 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a.pow(b as u32))),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Number(a.pow(b as u32)))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
         );
+
+        // Built-in function for checking if a number is zero
         builtins.insert(
             "zero?".to_string(),
             ResultValue::Func(1, |args| {
@@ -145,6 +166,8 @@ impl Env {
                 }
             }),
         );
+
+        // Built-in function for equality
         builtins.insert(
             "=".to_string(),
             ResultValue::Func(2, |args| {
@@ -153,11 +176,15 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a == b)),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Bool(a == b))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
         );
+
+        // Built-in function for less than
         builtins.insert(
             "<".to_string(),
             ResultValue::Func(2, |args| {
@@ -166,11 +193,15 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a < b)),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Bool(a < b))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
         );
+
+        // Built-in function for greater than
         builtins.insert(
             ">".to_string(),
             ResultValue::Func(2, |args| {
@@ -179,11 +210,15 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a > b)),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Bool(a > b))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
         );
+
+        // Built-in function for greater than or equal to
         builtins.insert(
             ">=".to_string(),
             ResultValue::Func(2, |args| {
@@ -192,11 +227,15 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a >= b)),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Bool(a >= b))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
         );
+
+        // Built-in function for less than or equal to
         builtins.insert(
             "<=".to_string(),
             ResultValue::Func(2, |args| {
@@ -205,11 +244,15 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Bool(a <= b)),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Bool(a <= b))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
         );
+
+        // Built-in function for printing a statement
         builtins.insert(
             "print".to_string(),
             ResultValue::Func(1, |args| {
@@ -221,6 +264,8 @@ impl Env {
                 Ok(ResultValue::Number(0))
             }),
         );
+
+        // Built-in function for absolute value
         builtins.insert(
             "abs".to_string(),
             ResultValue::Func(1, |args| {
@@ -234,6 +279,8 @@ impl Env {
                 }
             }),
         );
+
+        // Built-in function for finding the maximum of two numbers
         builtins.insert(
             "max".to_string(),
             ResultValue::Func(2, |args| {
@@ -242,11 +289,15 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a.max(b))),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Number(a.max(b)))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
         );
+
+        // Built-in function for finding the minimum of two numbers
         builtins.insert(
             "min".to_string(),
             ResultValue::Func(2, |args| {
@@ -255,7 +306,53 @@ impl Env {
                 }
 
                 match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a.min(b))),
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        Ok(ResultValue::Number(a.min(b)))
+                    }
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for finding the factorial of a number
+        builtins.insert(
+            "fact".to_string(),
+            ResultValue::Func(1, |args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Number(n) => {
+                        if n < 0 {
+                            return Err("Factorial of a negative number is undefined".to_string());
+                        }
+                        let mut result = 1;
+                        for i in 1..=n {
+                            result *= i;
+                        }
+                        Ok(ResultValue::Number(result))
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for taking modular of a number by another number
+        builtins.insert(
+            "mod".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => {
+                        if b == 0 {
+                            return Err("Division by zero".to_string());
+                        }
+                        Ok(ResultValue::Number(a % b))
+                    }
                     _ => Err("Invalid arguments".to_string()),
                 }
             }),
@@ -296,7 +393,7 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
         }
 
         Expr::Identifier(value) => match env.get_vars(&value) {
-            Some(val) => Ok(val), // Return the value of the variable
+            Some(val) => Ok(val),                   // Return the value of the variable
             None => Ok(ResultValue::String(value)), // Return the identifier as a string if not found
         },
 
@@ -345,18 +442,25 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
             let params = args.remove(0);
             let body_expr = args.remove(0);
             let param_names = if let Expr::Parameters(params) = params {
-                params.into_iter().map(|param| {
-                    if let Expr::Identifier(name) = param {
-                        Ok(name)
-                    } else {
-                        Err("Invalid parameter".to_string())
-                    }
-                }).collect::<Result<Vec<_>, _>>()?
+                params
+                    .into_iter()
+                    .map(|param| {
+                        if let Expr::Identifier(name) = param {
+                            Ok(name)
+                        } else {
+                            Err("Invalid parameter".to_string())
+                        }
+                    })
+                    .collect::<Result<Vec<_>, _>>()?
             } else {
                 return Err("Invalid parameters".to_string());
             };
             // Return the lambda function
-            Ok(ResultValue::Lambda(param_names, Box::new(body_expr), env.clone()))
+            Ok(ResultValue::Lambda(
+                param_names,
+                Box::new(body_expr),
+                env.clone(),
+            ))
         }
 
         Expr::Let(name, value, body) => {
