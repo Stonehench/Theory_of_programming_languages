@@ -219,7 +219,45 @@ impl Env {
                 Ok(ResultValue::Number(0))
             }),
         );
-        
+        builtins.insert(
+            "abs".to_string(),
+            ResultValue::Func(1, |args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Number(n) => Ok(ResultValue::Number(n.abs())),
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            "max".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a.max(b))),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+        builtins.insert(
+            "min".to_string(),
+            ResultValue::Func(2, |args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Number(a), ResultValue::Number(b)) => Ok(ResultValue::Number(a.min(b))),
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
 
         Self { vars, builtins }
     }
