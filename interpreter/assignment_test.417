@@ -1,0 +1,5 @@
+{
+    let incr = lambda(n) {add(n,1)};
+    let x = 3;
+    incr(x)
+}

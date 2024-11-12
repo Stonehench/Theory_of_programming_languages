@@ -5,8 +5,8 @@
 // recent binding, not the one that was extant when 'incr' was defined.
 
 {
-  let amt 1;
-  let incr lambda(n) {add(amt,n)};
-  let amt 100;
+  let amt = 1;
+  let incr = lambda(n) {add(amt,n)};
+  amt = 100;
   incr(5)
 }

@@ -48,5 +48,6 @@ ok cp3ex4.417 3628800
 ok fibonachi.417 55
 ok cp5ex1.417 6
 # ok cp5ex2.417 105
+ok assignment_test.417 4
 
 echo "All tests passed!"

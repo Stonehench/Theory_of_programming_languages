@@ -3,7 +3,7 @@
 //
 // The result here should be 6.
 {
-  let amt 1;
-  let incr lambda(n) {add(amt,n)};
+  let amt = 1;
+  let incr = lambda(n) {add(amt,n)};
   incr(5)
 }

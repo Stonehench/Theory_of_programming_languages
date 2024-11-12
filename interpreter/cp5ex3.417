@@ -9,7 +9,7 @@
 // is evaluated).
 //
 {
-  let incr lambda(n) {add(amt,n)};
-  let amt 1;
+  let incr = lambda(n) {add(amt,n)};
+  let amt = 1;
   incr(5)
 }

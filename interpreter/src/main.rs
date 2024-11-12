@@ -18,7 +18,7 @@ enum Expr {
     Parameters(Vec<Expr>),                // Parameters for a lambda function
     Lambda(Vec<Expr>),                    // Lambda function
     Let(Box<Expr>, Box<Expr>, Box<Expr>), // Let binding
-    Define(Box<Expr>, Box<Expr>),         // Define a variable or function
+    Assignment(Box<Expr>, Box<Expr>),         // Define a variable or function
 }
 
 // Define the possible result values of evaluating expressions
@@ -47,7 +47,7 @@ impl std::fmt::Display for ResultValue {
 // Define the environment that holds variables and built-in functions
 #[derive(Debug, Clone)]
 struct Env {
-    vars: HashMap<String, ResultValue>, // Variables defined in the environment
+    vars: HashMap<String, Box<ResultValue>>, // Variables defined in the environment
     builtins: HashMap<String, ResultValue>, // Built-in functions
 }
 
@@ -56,9 +56,9 @@ impl Env {
     fn new() -> Self {
         let mut vars = HashMap::new();
         // Initialize the environment with Roman numerals
-        vars.insert("x".to_string(), ResultValue::Number(10));
-        vars.insert("v".to_string(), ResultValue::Number(5));
-        vars.insert("i".to_string(), ResultValue::Number(1));
+        vars.insert("x".to_string(), Box::new(ResultValue::Number(10)));
+        vars.insert("v".to_string(), Box::new(ResultValue::Number(5)));
+        vars.insert("i".to_string(), Box::new(ResultValue::Number(1)));
 
         // Initialize the environment with built-in functions
         let mut builtins = HashMap::new();
@@ -114,7 +114,7 @@ impl Env {
             }),
         );
 
-        // Built-in function for division
+        // Built-in function for integer division
         builtins.insert(
             "div".to_string(),
             ResultValue::Func(2, |args| {
@@ -169,7 +169,7 @@ impl Env {
 
         // Built-in function for equality
         builtins.insert(
-            "=".to_string(),
+            "eq".to_string(),
             ResultValue::Func(2, |args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
@@ -261,7 +261,7 @@ impl Env {
                 }
 
                 println!("{}", args[0]);
-                Ok(ResultValue::Number(0))
+                Ok(ResultValue::Bool(false))
             }),
         );
 
@@ -362,13 +362,13 @@ impl Env {
     }
 
     // Get a variable from the environment
-    fn get_vars(&self, name: &str) -> Option<ResultValue> {
+    fn get_vars(&self, name: &str) -> Option<Box<ResultValue>> {
         self.vars.get(name).cloned()
     }
 
-    // Insert a variable into the environment
+    // Insert a variable into the environment for let bindings
     fn insert_vars(&mut self, name: String, value: ResultValue) {
-        self.vars.insert(name, value);
+        self.vars.insert(name, Box::new(value));
     }
 }
 
@@ -393,7 +393,7 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
         }
 
         Expr::Identifier(value) => match env.get_vars(&value) {
-            Some(val) => Ok(val),                   // Return the value of the variable
+            Some(val) => Ok(*val),      // Return the value of the variable
             None => Ok(ResultValue::String(value)), // Return the identifier as a string if not found
         },
 
@@ -477,7 +477,7 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
             eval_expr(*body, env)
         }
 
-        Expr::Define(name, value) => {
+        Expr::Assignment(name, value) => {
             // Evaluate the value to be defined
             let name = if let Expr::Identifier(name) = *name {
                 name
@@ -486,8 +486,14 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
             };
             let value = eval_expr(*value, env)?;
             // Insert the variable into the environment
-            env.insert_vars(name, value);
-            Ok(ResultValue::Number(0))
+            // env.insert_vars(name, value.clone());
+
+            let cell = env.get_vars(&name);
+            if cell.is_none() {
+                return Err("Variable not found".to_string());
+            }
+            *cell.unwrap() = *Box::new(value.clone());
+            Ok(value)
         }
     }
 }
