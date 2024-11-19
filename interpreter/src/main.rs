@@ -731,6 +731,134 @@ impl Env {
             }),
         );
 
+        // Built-in function for getting median of an array
+        builtins.insert(
+            "median".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(mut v) => {
+                        v.sort_by(|a, b| match (a, b) {
+                            (ResultValue::Number(a), ResultValue::Number(b)) => a.cmp(b),
+                            _ => panic!("Invalid argument"),
+                        });
+                        let len = v.len();
+                        if len % 2 == 0 {
+                            let mid = len / 2;
+                            match (v[mid - 1].clone(), v[mid].clone()) {
+                                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                                    Ok(ResultValue::Number((a + b) / 2))
+                                }
+                                _ => Err("Invalid argument".to_string()),
+                            }
+                        } else {
+                            match v[len / 2].clone() {
+                                ResultValue::Number(n) => Ok(ResultValue::Number(n)),
+                                _ => Err("Invalid argument".to_string()),
+                            }
+                        }
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for getting mean of an array
+        builtins.insert(
+            "mean".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(v) => {
+                        let mut sum = 0;
+                        let mut count = 0;
+                        for arg in v {
+                            match arg {
+                                ResultValue::Number(n) => {
+                                    sum += n;
+                                    count += 1;
+                                }
+                                _ => return Err("Invalid argument".to_string()),
+                            }
+                        }
+                        if count == 0 {
+                            return Err("Array is empty".to_string());
+                        }
+                        Ok(ResultValue::Number(sum / count as i64))
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+        
+        // Built-in function for getting max value of an array
+        builtins.insert(
+            "maxArray".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(v) => {
+                        let mut max = std::i64::MIN;
+                        for arg in v {
+                            match arg {
+                                ResultValue::Number(n) => {
+                                    if n > max {
+                                        max = n;
+                                    }
+                                }
+                                _ => return Err("Invalid argument".to_string()),
+                            }
+                        }
+                        if max == std::i64::MIN {
+                            return Err("Array is empty".to_string());
+                        }
+                        Ok(ResultValue::Number(max))
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for getting min value of an array
+        builtins.insert(
+            "minArray".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(v) => {
+                        let mut min = std::i64::MAX;
+                        for arg in v {
+                            match arg {
+                                ResultValue::Number(n) => {
+                                    if n < min {
+                                        min = n;
+                                    }
+                                }
+                                _ => return Err("Invalid argument".to_string()),
+                            }
+                        }
+                        if min == std::i64::MAX {
+                            return Err("Array is empty".to_string());
+                        }
+                        Ok(ResultValue::Number(min))
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
         Self {
             vars,
             builtins,
