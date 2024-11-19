@@ -124,14 +124,14 @@
     print("");
 
     print("we can use map to apply a function to each element in the array");
-    exAr2 = map(lambda(n){add(n,1)}, exAr);
-    print("adding 1 to each element results in", exAr2);
+    exAr = map(lambda(n){add(n,1)}, exAr);
+    print("adding 1 to each element results in", exAr);
     wait(2000);
     print("");
 
     print("we can use filter to filter elements based on a condition");
-    exAr2 = filter(lambda(n){>(n, 10)}, exAr);
-    print("filtering elements greater than 10 results in", exAr2);
+    exAr = filter(lambda(n){>(n, 10)}, exAr);
+    print("filtering elements greater than 10 results in", exAr);
     wait(2000);
     print("");
 

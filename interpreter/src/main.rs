@@ -46,8 +46,12 @@ impl std::fmt::Display for ResultValue {
             ResultValue::Lambda(p, b, _) => write!(f, "<lambda {:?} {:?}>", p, b),
             ResultValue::Vec(v) => {
                 write!(f, "[")?;
-                for val in v {
-                    write!(f, "{} ", val)?;
+                for (i, val) in v.iter().enumerate() {
+                    if i == v.len() - 1 {
+                        write!(f, "{}", val)?;
+                    } else {
+                        write!(f, "{}, ", val)?;
+                    }
                 }
                 write!(f, "]")?;
                 Ok(())
