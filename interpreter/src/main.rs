@@ -1,7 +1,9 @@
 use serde_derive::Deserialize;
 use std::{
+    cell::RefCell,
     collections::HashMap,
     io::{self, Read},
+    rc::Rc,
 };
 
 // Define the expression types that can be parsed from JSON
@@ -18,7 +20,7 @@ enum Expr {
     Parameters(Vec<Expr>),                // Parameters for a lambda function
     Lambda(Vec<Expr>),                    // Lambda function
     Let(Box<Expr>, Box<Expr>, Box<Expr>), // Let binding
-    Assignment(Box<Expr>, Box<Expr>),         // Define a variable or function
+    Assignment(Box<Expr>, Box<Expr>),     // Define a variable or function
 }
 
 // Define the possible result values of evaluating expressions
@@ -27,7 +29,7 @@ enum ResultValue {
     Number(i64),                                                      // Integer number
     Bool(bool),                                                       // Boolean value
     String(String),                                                   // String value
-    Func(usize, fn(Vec<ResultValue>) -> Result<ResultValue, String>), // Built-in function
+    Func(fn(Vec<ResultValue>) -> Result<ResultValue, String>), // Built-in function
     Lambda(Vec<String>, Box<Expr>, Env),                              // Lambda function
 }
 
@@ -38,7 +40,7 @@ impl std::fmt::Display for ResultValue {
             ResultValue::Number(n) => write!(f, "{}", n),
             ResultValue::Bool(b) => write!(f, "{}", b),
             ResultValue::String(s) => write!(f, "{}", s),
-            ResultValue::Func(_, _) => write!(f, "<function>"),
+            ResultValue::Func(_) => write!(f, "<function>"),
             ResultValue::Lambda(p, b, _) => write!(f, "<lambda {:?} {:?}>", p, b),
         }
     }
@@ -47,8 +49,9 @@ impl std::fmt::Display for ResultValue {
 // Define the environment that holds variables and built-in functions
 #[derive(Debug, Clone)]
 struct Env {
-    vars: HashMap<String, Box<ResultValue>>, // Variables defined in the environment
-    builtins: HashMap<String, ResultValue>, // Built-in functions
+    vars: HashMap<String, Rc<RefCell<ResultValue>>>, // Variables defined in the environment
+    builtins: HashMap<String, ResultValue>,          // Built-in functions
+    parent: Option<Box<Env>>,                        // Parent environment
 }
 
 impl Env {
@@ -56,9 +59,18 @@ impl Env {
     fn new() -> Self {
         let mut vars = HashMap::new();
         // Initialize the environment with Roman numerals
-        vars.insert("x".to_string(), Box::new(ResultValue::Number(10)));
-        vars.insert("v".to_string(), Box::new(ResultValue::Number(5)));
-        vars.insert("i".to_string(), Box::new(ResultValue::Number(1)));
+        vars.insert(
+            "i".to_string(),
+            Rc::new(RefCell::new(ResultValue::Number(1))),
+        );
+        vars.insert(
+            "v".to_string(),
+            Rc::new(RefCell::new(ResultValue::Number(5))),
+        );
+        vars.insert(
+            "x".to_string(),
+            Rc::new(RefCell::new(ResultValue::Number(10))),
+        );
 
         // Initialize the environment with built-in functions
         let mut builtins = HashMap::new();
@@ -66,7 +78,7 @@ impl Env {
         // Built-in function for addition
         builtins.insert(
             "add".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -83,7 +95,7 @@ impl Env {
         // Built-in function for subtraction
         builtins.insert(
             "sub".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -100,7 +112,7 @@ impl Env {
         // Built-in function for multiplication
         builtins.insert(
             "mul".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -117,7 +129,7 @@ impl Env {
         // Built-in function for integer division
         builtins.insert(
             "div".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -138,7 +150,7 @@ impl Env {
         // Built-in function for exponentiation
         builtins.insert(
             "pow".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -155,7 +167,7 @@ impl Env {
         // Built-in function for checking if a number is zero
         builtins.insert(
             "zero?".to_string(),
-            ResultValue::Func(1, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 1 {
                     return Err("Expected exactly 1 argument".to_string());
                 }
@@ -170,7 +182,7 @@ impl Env {
         // Built-in function for equality
         builtins.insert(
             "eq".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -187,7 +199,7 @@ impl Env {
         // Built-in function for less than
         builtins.insert(
             "<".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -204,7 +216,7 @@ impl Env {
         // Built-in function for greater than
         builtins.insert(
             ">".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -221,7 +233,7 @@ impl Env {
         // Built-in function for greater than or equal to
         builtins.insert(
             ">=".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -238,7 +250,7 @@ impl Env {
         // Built-in function for less than or equal to
         builtins.insert(
             "<=".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -255,12 +267,12 @@ impl Env {
         // Built-in function for printing a statement
         builtins.insert(
             "print".to_string(),
-            ResultValue::Func(1, |args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
+            ResultValue::Func(|args| {
+                
+                for arg in args {
+                    print!("{} ", arg);
                 }
 
-                println!("{}", args[0]);
                 Ok(ResultValue::Bool(false))
             }),
         );
@@ -268,7 +280,7 @@ impl Env {
         // Built-in function for absolute value
         builtins.insert(
             "abs".to_string(),
-            ResultValue::Func(1, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 1 {
                     return Err("Expected exactly 1 argument".to_string());
                 }
@@ -283,7 +295,7 @@ impl Env {
         // Built-in function for finding the maximum of two numbers
         builtins.insert(
             "max".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -300,7 +312,7 @@ impl Env {
         // Built-in function for finding the minimum of two numbers
         builtins.insert(
             "min".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -317,7 +329,7 @@ impl Env {
         // Built-in function for finding the factorial of a number
         builtins.insert(
             "fact".to_string(),
-            ResultValue::Func(1, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 1 {
                     return Err("Expected exactly 1 argument".to_string());
                 }
@@ -341,7 +353,7 @@ impl Env {
         // Built-in function for taking modular of a number by another number
         builtins.insert(
             "mod".to_string(),
-            ResultValue::Func(2, |args| {
+            ResultValue::Func(|args| {
                 if args.len() != 2 {
                     return Err("Expected exactly 2 arguments".to_string());
                 }
@@ -358,17 +370,54 @@ impl Env {
             }),
         );
 
-        Self { vars, builtins }
+        Self {
+            vars,
+            builtins,
+            parent: None,
+        }
+    }
+
+    // Create a new environment with a parent
+    fn new_with_parent(parent: Env) -> Self {
+        Self {
+            vars: HashMap::new(),
+            builtins: HashMap::new(),
+            parent: Some(Box::new(parent)),
+        }
     }
 
     // Get a variable from the environment
-    fn get_vars(&self, name: &str) -> Option<Box<ResultValue>> {
-        self.vars.get(name).cloned()
+    fn get_vars(&self, name: &str) -> Option<Rc<RefCell<ResultValue>>> {
+        self.vars.get(name).cloned().or_else(|| {
+            self.parent
+                .as_ref()
+                .and_then(|parent| parent.get_vars(name))
+        })
     }
 
     // Insert a variable into the environment for let bindings
     fn insert_vars(&mut self, name: String, value: ResultValue) {
-        self.vars.insert(name, Box::new(value));
+        self.vars.insert(name, Rc::new(RefCell::new(value)));
+    }
+
+    // Update a variable in the environment where it was originally defined (dereferencing the Box)
+    fn update_vars_deref(&mut self, name: &str, value: ResultValue) -> Result<(), String> {
+        if let Some(cell) = self.vars.get_mut(name) {
+            *cell.borrow_mut() = value;
+            Ok(())
+        } else if let Some(ref mut parent) = self.parent {
+            parent.update_vars_deref(name, value)
+        } else {
+            Err("Variable not found".to_string())
+        }
+    }
+
+    fn get_builtins(&self, name: &str) -> Option<ResultValue> {
+        self.builtins.get(name).cloned().or_else(|| {
+            self.parent
+                .as_ref()
+                .and_then(|parent| parent.get_builtins(name))
+        })
     }
 }
 
@@ -385,23 +434,25 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
             // Evaluate the function to be applied
             let func = eval_expr(args.remove(0), env)?;
             // Check if the function is a built-in function
-            if env.builtins.contains_key(&func.to_string()) {
-                return apply_function(env.builtins[&func.to_string()].clone(), args, env);
+            if let Some(built_in_func) = env.get_builtins(&func.to_string()) {
+                return apply_function(built_in_func, args, env);
             }
             // Apply the function
             apply_function(func, args, env)
         }
 
         Expr::Identifier(value) => match env.get_vars(&value) {
-            Some(val) => Ok(*val),      // Return the value of the variable
+            Some(val) => Ok(val.borrow().clone()), // Return the value of the variable
             None => Ok(ResultValue::String(value)), // Return the identifier as a string if not found
         },
 
         Expr::Block(exprs) => {
+            // Create a new environment with the current environment as the parent
+            let mut block_env = Env::new_with_parent(env.clone());
             // Evaluate each expression in the block and return the result of the last one
-            let mut result = ResultValue::Number(0);
+            let mut result = ResultValue::Bool(false);
             for expr in exprs {
-                result = eval_expr(expr, env)?;
+                result = eval_expr(expr, &mut block_env)?;
             }
             Ok(result)
         }
@@ -485,14 +536,8 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
                 return Err("Invalid variable name".to_string());
             };
             let value = eval_expr(*value, env)?;
-            // Insert the variable into the environment
-            // env.insert_vars(name, value.clone());
-
-            let cell = env.get_vars(&name);
-            if cell.is_none() {
-                return Err("Variable not found".to_string());
-            }
-            *cell.unwrap() = *Box::new(value.clone());
+            // Update the variable in the environment where it was originally defined (dereferencing the Box)
+            env.update_vars_deref(&name, value.clone())?;
             Ok(value)
         }
     }
@@ -501,12 +546,7 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
 // Apply a function to arguments in the given environment
 fn apply_function(f: ResultValue, args: Vec<Expr>, env: &mut Env) -> Result<ResultValue, String> {
     match f {
-        ResultValue::Func(args_length, func) => {
-            // Check if the number of arguments matches the expected length
-            if args.len() != args_length {
-                return Err(format!("Expected {} arguments", args_length));
-            }
-
+        ResultValue::Func(func) => {
             // Evaluate each argument
             let arg_values = args
                 .into_iter()
@@ -516,27 +556,23 @@ fn apply_function(f: ResultValue, args: Vec<Expr>, env: &mut Env) -> Result<Resu
             // Apply the function to the evaluated arguments
             func(arg_values)
         }
-        ResultValue::Lambda(param_names, body, mut lambda_env) => {
+        ResultValue::Lambda(param_names, body, lambda_env) => {
             // Check if the number of arguments matches the number of parameters
             if args.len() != param_names.len() {
                 return Err(format!("Expected {} arguments", param_names.len()));
             }
 
+            // Create a new environment with the lambda's environment as the parent
+            let mut new_env = Env::new_with_parent(lambda_env);
+
             // Evaluate arguments and extend the environment
             for (param_name, arg) in param_names.into_iter().zip(args.into_iter()) {
                 let arg_value = eval_expr(arg, env)?;
-                // Lexical scope: extend the lambda's environment
-                lambda_env.insert_vars(param_name, arg_value);
-
-                // Dynamic scope: extend the current environment
-                // env.insert_vars(param_name, arg_value);
+                new_env.insert_vars(param_name, arg_value);
             }
 
-            // Evaluate the body of the lambda in the extended environment (lexical scope)
-            eval_expr(*body, &mut lambda_env)
-
-            // Evaluate the body of the lambda in the extended environment (dynamic scope)
-            // eval_expr(*body, env)
+            // Evaluate the body of the lambda in the new environment
+            eval_expr(*body, &mut new_env)
         }
         _ => Err("Not a function".to_string()),
     }

@@ -18,7 +18,7 @@ enum Expr {
     Parameters(Vec<Expr>),                // Parameters for a lambda function
     Lambda(Vec<Expr>),                    // Lambda function
     Let(Box<Expr>, Box<Expr>, Box<Expr>), // Let binding
-    Assignment(Box<Expr>, Box<Expr>),         // Define a variable or function
+    Assignment(Box<Expr>, Box<Expr>),     // Define a variable or function
 }
 
 // Define the possible result values of evaluating expressions
@@ -488,11 +488,12 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
             // Insert the variable into the environment
             // env.insert_vars(name, value.clone());
 
-            let cell = env.get_vars(&name);
-            if cell.is_none() {
-                return Err("Variable not found".to_string());
+            if let Some(cell) = env.vars.get_mut(&name) {
+                *cell = Box::new(value.clone());
+            } else {
+                Err("Variable not found".to_string())?;
             }
-            *cell.unwrap() = *Box::new(value.clone());
+
             Ok(value)
         }
     }

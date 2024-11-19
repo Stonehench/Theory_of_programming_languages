@@ -7,6 +7,6 @@
 {
   let amt = 1;
   let incr = lambda(n) {add(amt,n)};
-  amt = 100;
+  let amt = 100;
   incr(5)
 }
