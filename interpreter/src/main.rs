@@ -44,8 +44,16 @@ impl std::fmt::Display for ResultValue {
             ResultValue::String(s) => write!(f, "{}", s),
             ResultValue::Func(_) => write!(f, "<function>"),
             ResultValue::Lambda(p, b, _) => write!(f, "<lambda {:?} {:?}>", p, b),
-            ResultValue::Vec(v) => write!(f, "{:?}", v),
+            ResultValue::Vec(v) => {
+                write!(f, "[")?;
+                for val in v {
+                    write!(f, "{} ", val)?;
+                }
+                write!(f, "]")?;
+                Ok(())
+            }
         }
+    
     }
 }
 
@@ -274,6 +282,7 @@ impl Env {
                 for arg in args {
                     print!("{} ", arg);
                 }
+                println!();
 
                 Ok(ResultValue::Bool(false))
             }),
@@ -382,7 +391,7 @@ impl Env {
 
                 match args[0].clone() {
                     ResultValue::Number(n) => {
-                        std::thread::sleep(std::time::Duration::from_secs(n as u64));
+                        std::thread::sleep(std::time::Duration::from_millis(n as u64));
                         Ok(ResultValue::Bool(false))
                     }
                     _ => Err("Invalid argument".to_string()),
@@ -392,7 +401,7 @@ impl Env {
 
         // Built-in function for creating arrays of integers
         builtins.insert(
-            "IntArray".to_string(),
+            "intArray".to_string(),
             ResultValue::Func(|args| {
                 let mut result = Vec::new();
                 for arg in args {
@@ -407,7 +416,7 @@ impl Env {
 
         // Built-in function for creating arrays of strings
         builtins.insert(
-            "StringArray".to_string(),
+            "stringArray".to_string(),
             ResultValue::Func(|args| {
                 let mut result = Vec::new();
                 for arg in args {

@@ -1,0 +1,177 @@
+{
+    print("");
+    print("");
+    print("");
+    print("This is the demo script of my interpreter and all its build-in functions :D");
+    wait(2000);
+    print("we can ofcourse use basic arithmatics");
+    let ex = add(2,3);
+    print("2 + 3 =", ex);
+    ex = sub(2,3);
+    print("2 - 3 =", ex);
+    ex = mul(2,3);
+    print("2 * 3 =", ex);
+    ex = div(2,3);
+    print("2 / 3 =", ex);
+    wait(2500);
+    print("");
+    print("");
+
+    print("but also more advanced functions like");
+    wait(1000);
+    ex = mod(20,3);
+    print("20 % 3 =", ex);
+    wait(1000);
+    print("");
+
+    ex = max(20, 3);
+    print("the highest value of 2 numbers like 20 and 3 =", ex);
+    ex = min(20, 3);
+    print("the lowest value of 2 numbers like 20 and 3 =", ex);
+    wait(1000);
+    print("");
+
+    ex = abs(-2);
+    print("the absolut value of a number like -2 is", ex);
+    wait(2000);
+    print("");
+
+
+    print("and ofcourse i can't make a bunch of unnececary functions without having the factorial");
+    ex = fact(7);
+    print("7! =", ex);
+    wait(3000);
+    print("");
+    print("");
+
+    print("but since these are all in the same ballpark i also dicided to create arrays");
+    wait(2000);
+    let exAr = intArray(3,6,9,3,1,32,76,143,08);
+    print("like an array of these numbers [3,6,9,3,1,32,76,143,08]");
+    wait(2000);
+    print("");
+
+    print("which can be sorted");
+    exAr = sort(exAr);
+    print(exAr);
+    wait(2000);
+    print("");
+
+    print("or i can get the length");
+    ex = len(exAr);
+    print(ex);
+    wait(2000);
+    print("");
+    
+    print("I might want to get a value at a specific index");
+    ex = get(exAr, 2);
+    print("getting index 2 results in", ex);
+    wait(2000);
+    print("");
+
+    print("I can also set a value at a specific index");
+    exAr = set(exAr, 2, 99);
+    print("setting index 2 to 99 results in", exAr);
+    wait(2000);
+    print("");
+
+    print("I can append a value to the array");
+    exAr = append(exAr, 55);
+    print("appending 55 results in", exAr);
+    wait(2000);
+    print("");
+
+    print("I can remove a value from the array");
+    exAr = remove(exAr, 3);
+    print("removing the value at index 3 results in", exAr);
+    wait(2000);
+    print("");
+
+    print("I can reverse the array");
+    exAr = rev(exAr);
+    print("reversing the array results in", exAr);
+    wait(2000);
+    print("");
+
+    print("I can check if the array is empty");
+    let isEmpty = empty?(exAr);
+    print("is the array empty?", isEmpty);
+    wait(2000);
+    print("");
+
+    print("I can get the first element of the array");
+    ex = head(exAr);
+    print("the first element is", ex);
+    wait(2000);
+    print("");
+
+    print("I can get the tail");
+    let exAr2 = tail(exAr);
+    print("the array without the first element is", exAr2);
+    wait(2000);
+    print("");
+
+    print("I can get the last element of the array");
+    ex = last(exAr);
+    print("the last element is", ex);
+    wait(2000);
+    print("");
+    print("");
+
+    print("That's all well and good, but if we really want to test the limits of what these arrays can do so far");
+    print("we'll need to use the higher order functions");
+    wait(3000);
+    print("");
+
+    print("we can use map to apply a function to each element in the array");
+    exAr2 = map(lambda(n){add(n,1)}, exAr);
+    print("adding 1 to each element results in", exAr2);
+    wait(2000);
+    print("");
+
+    print("we can use filter to filter elements based on a condition");
+    exAr2 = filter(lambda(n){>(n, 10)}, exAr);
+    print("filtering elements greater than 10 results in", exAr2);
+    wait(2000);
+    print("");
+
+    print("we can use fold to reduce the array to a single value");
+    ex = fold(lambda(n, acc){add(n,acc)}, 0, exAr);
+    print("folding with addition results in", ex);
+    wait(2000);
+    print("");
+
+    print("we can use sum to get the sum of all elements in the array");
+    ex = sum(exAr);
+    print("the sum of the array is", ex);
+    wait(2000);
+    print("");
+
+    print("we can use product to get the product of all elements in the array");
+    ex = product(exAr);
+    print("the product of the array is", ex);
+    wait(2000);
+    print("");
+
+    print("we can use median to get the median of the array");
+    ex = median(exAr);
+    print("the median of the array is", ex);
+    wait(2000);
+    print("");
+
+    print("we can use mean to get the mean of the array");
+    ex = mean(exAr);
+    print("the mean of the array is", ex);
+    wait(2000);
+    print("");
+
+    print("we can use maxArray to get the maximum value in the array");
+    ex = maxArray(exAr);
+    print("the maximum value in the array is", ex);
+    wait(2000);
+    print("");
+
+    print("we can use minArray to get the minimum value in the array");
+    print("the minimum value in the array is");
+    ex = minArray(exAr)
+}
