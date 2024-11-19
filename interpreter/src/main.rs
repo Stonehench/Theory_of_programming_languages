@@ -26,11 +26,13 @@ enum Expr {
 // Define the possible result values of evaluating expressions
 #[derive(Debug, Clone)]
 enum ResultValue {
-    Number(i64),                                                      // Integer number
-    Bool(bool),                                                       // Boolean value
-    String(String),                                                   // String value
+    Number(i64),                                               // Integer number
+    Bool(bool),                                                // Boolean value
+    String(String),                                            // String value
     Func(fn(Vec<ResultValue>) -> Result<ResultValue, String>), // Built-in function
-    Lambda(Vec<String>, Box<Expr>, Env),                              // Lambda function
+    Lambda(Vec<String>, Box<Expr>, Env),                       // Lambda function
+
+    Vec(Vec<ResultValue>), // Array for fun
 }
 
 // Implement display formatting for ResultValue
@@ -42,6 +44,7 @@ impl std::fmt::Display for ResultValue {
             ResultValue::String(s) => write!(f, "{}", s),
             ResultValue::Func(_) => write!(f, "<function>"),
             ResultValue::Lambda(p, b, _) => write!(f, "<lambda {:?} {:?}>", p, b),
+            ResultValue::Vec(v) => write!(f, "{:?}", v),
         }
     }
 }
@@ -268,7 +271,6 @@ impl Env {
         builtins.insert(
             "print".to_string(),
             ResultValue::Func(|args| {
-                
                 for arg in args {
                     print!("{} ", arg);
                 }
@@ -366,6 +368,365 @@ impl Env {
                         Ok(ResultValue::Number(a % b))
                     }
                     _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for creating arrays of integers
+        builtins.insert(
+            "IntArray".to_string(),
+            ResultValue::Func(|args| {
+                let mut result = Vec::new();
+                for arg in args {
+                    match arg {
+                        ResultValue::Number(n) => result.push(ResultValue::Number(n)),
+                        _ => return Err("Invalid argument".to_string()),
+                    }
+                }
+                Ok(ResultValue::Vec(result))
+            }),
+        );
+
+        // Built-in function for creating arrays of strings
+        builtins.insert(
+            "StringArray".to_string(),
+            ResultValue::Func(|args| {
+                let mut result = Vec::new();
+                for arg in args {
+                    match arg {
+                        ResultValue::String(s) => result.push(ResultValue::String(s)),
+                        _ => return Err("Invalid argument".to_string()),
+                    }
+                }
+                Ok(ResultValue::Vec(result))
+            }),
+        );
+
+        // Built-in function for getting the length of an array
+        builtins.insert(
+            "len".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(v) => Ok(ResultValue::Number(v.len() as i64)),
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for getting the element at an index in an array
+        builtins.insert(
+            "get".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Vec(v), ResultValue::Number(i)) => {
+                        if i < 0 || i as usize >= v.len() {
+                            return Err("Index out of bounds".to_string());
+                        }
+                        Ok(v[i as usize].clone())
+                    }
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for setting the element at an index in an array
+        builtins.insert(
+            "set".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 3 {
+                    return Err("Expected exactly 3 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone(), args[2].clone()) {
+                    (ResultValue::Vec(mut v), ResultValue::Number(i), value) => {
+                        if i < 0 || i as usize >= v.len() {
+                            return Err("Index out of bounds".to_string());
+                        }
+                        v[i as usize] = value;
+                        Ok(ResultValue::Vec(v))
+                    }
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for appending an element to an array
+        builtins.insert(
+            "append".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Vec(mut v), value) => {
+                        v.push(value);
+                        Ok(ResultValue::Vec(v))
+                    }
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for removing an element at an index in an array
+        builtins.insert(
+            "remove".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Vec(mut v), ResultValue::Number(i)) => {
+                        if i < 0 || i as usize >= v.len() {
+                            return Err("Index out of bounds".to_string());
+                        }
+                        v.remove(i as usize);
+                        Ok(ResultValue::Vec(v))
+                    }
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for reversing an array
+        builtins.insert(
+            "rev".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(mut v) => {
+                        v.reverse();
+                        Ok(ResultValue::Vec(v))
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for sorting an array
+        builtins.insert(
+            "sort".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(mut v) => {
+                        v.sort_by(|a, b| match (a, b) {
+                            (ResultValue::Number(a), ResultValue::Number(b)) => a.cmp(b),
+                            _ => panic!("Invalid argument"),
+                        });
+                        Ok(ResultValue::Vec(v))
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for checking if an array is empty
+        builtins.insert(
+            "empty?".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(v) => Ok(ResultValue::Bool(v.is_empty())),
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for getting the head of an array
+        builtins.insert(
+            "head".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(v) => {
+                        if v.is_empty() {
+                            return Err("Array is empty".to_string());
+                        }
+                        Ok(v[0].clone())
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for getting the tail of an array
+        builtins.insert(
+            "tail".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(v) => {
+                        if v.is_empty() {
+                            return Err("Array is empty".to_string());
+                        }
+                        Ok(ResultValue::Vec(v[1..].to_vec()))
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for getting the last element of an array
+        builtins.insert(
+            "last".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(v) => {
+                        if v.is_empty() {
+                            return Err("Array is empty".to_string());
+                        }
+                        Ok(v[v.len() - 1].clone())
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for applying a function to each element of an array
+        builtins.insert(
+            "map".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Lambda(params, body, lambda_env), ResultValue::Vec(v)) => {
+                        let mut result = Vec::new();
+                        for arg in v {
+                            let mut new_env = Env::new_with_parent(lambda_env.clone());
+                            new_env.insert_vars(params[0].clone(), arg);
+                            result.push(eval_expr(*body.clone(), &mut new_env)?);
+                        }
+                        Ok(ResultValue::Vec(result))
+                    }
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for filtering an array
+        builtins.insert(
+            "filter".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 2 {
+                    return Err("Expected exactly 2 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone()) {
+                    (ResultValue::Lambda(params, body, lambda_env), ResultValue::Vec(v)) => {
+                        let mut result = Vec::new();
+                        for arg in v {
+                            let mut new_env = Env::new_with_parent(lambda_env.clone());
+                            new_env.insert_vars(params[0].clone(), arg.clone());
+                            if eval_expr(*body.clone(), &mut new_env)?.to_string() == "true" {
+                                result.push(arg);
+                            }
+                        }
+                        Ok(ResultValue::Vec(result))
+                    }
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for folding an array
+        builtins.insert(
+            "fold".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 3 {
+                    return Err("Expected exactly 3 arguments".to_string());
+                }
+
+                match (args[0].clone(), args[1].clone(), args[2].clone()) {
+                    (ResultValue::Lambda(params, body, lambda_env), acc, ResultValue::Vec(v)) => {
+                        let mut result = acc;
+                        for arg in v {
+                            let mut new_env = Env::new_with_parent(lambda_env.clone());
+                            new_env.insert_vars(params[0].clone(), result.clone());
+                            new_env.insert_vars(params[1].clone(), arg);
+                            result = eval_expr(*body.clone(), &mut new_env)?;
+                        }
+                        Ok(result)
+                    }
+                    _ => Err("Invalid arguments".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for summing an array
+        builtins.insert(
+            "sum".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(v) => {
+                        let mut result = 0;
+                        for arg in v {
+                            match arg {
+                                ResultValue::Number(n) => result += n,
+                                _ => return Err("Invalid argument".to_string()),
+                            }
+                        }
+                        Ok(ResultValue::Number(result))
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
+        // Built-in function for finding the product of an array
+        builtins.insert(
+            "product".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Vec(v) => {
+                        let mut result = 1;
+                        for arg in v {
+                            match arg {
+                                ResultValue::Number(n) => result *= n,
+                                _ => return Err("Invalid argument".to_string()),
+                            }
+                        }
+                        Ok(ResultValue::Number(result))
+                    }
+                    _ => Err("Invalid argument".to_string()),
                 }
             }),
         );
