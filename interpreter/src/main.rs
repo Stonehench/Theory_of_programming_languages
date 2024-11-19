@@ -372,6 +372,24 @@ impl Env {
             }),
         );
 
+        // Built-in function for waiting for a number of seconds
+        builtins.insert(
+            "wait".to_string(),
+            ResultValue::Func(|args| {
+                if args.len() != 1 {
+                    return Err("Expected exactly 1 argument".to_string());
+                }
+
+                match args[0].clone() {
+                    ResultValue::Number(n) => {
+                        std::thread::sleep(std::time::Duration::from_secs(n as u64));
+                        Ok(ResultValue::Bool(false))
+                    }
+                    _ => Err("Invalid argument".to_string()),
+                }
+            }),
+        );
+
         // Built-in function for creating arrays of integers
         builtins.insert(
             "IntArray".to_string(),
