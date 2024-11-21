@@ -90,805 +90,7 @@ impl Env {
         // Initialize the environment with built-in functions
         let mut builtins = HashMap::new();
 
-        // Built-in function for addition
-        builtins.insert(
-            "add".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Number(a + b))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for subtraction
-        builtins.insert(
-            "sub".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Number(a - b))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for multiplication
-        builtins.insert(
-            "mul".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Number(a * b))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for integer division
-        builtins.insert(
-            "div".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        if b == 0 {
-                            Err("Division by zero".to_string())
-                        } else {
-                            Ok(ResultValue::Number(a / b))
-                        }
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for exponentiation
-        builtins.insert(
-            "pow".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Number(a.pow(b as u32)))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for checking if a number is zero
-        builtins.insert(
-            "zero?".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Number(n) => Ok(ResultValue::Bool(n == 0)),
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for equality
-        builtins.insert(
-            "eq".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Bool(a == b))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for less than
-        builtins.insert(
-            "<".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Bool(a < b))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for greater than
-        builtins.insert(
-            ">".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Bool(a > b))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for greater than or equal to
-        builtins.insert(
-            ">=".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Bool(a >= b))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for less than or equal to
-        builtins.insert(
-            "<=".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Bool(a <= b))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for printing a statement
-        builtins.insert(
-            "print".to_string(),
-            ResultValue::Func(|args| {
-                for arg in args {
-                    print!("{} ", arg);
-                }
-                println!();
-
-                Ok(ResultValue::Bool(false))
-            }),
-        );
-
-        // Built-in function for absolute value
-        builtins.insert(
-            "abs".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Number(n) => Ok(ResultValue::Number(n.abs())),
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for finding the maximum of two numbers
-        builtins.insert(
-            "max".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Number(a.max(b)))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for finding the minimum of two numbers
-        builtins.insert(
-            "min".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        Ok(ResultValue::Number(a.min(b)))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for finding the factorial of a number
-        builtins.insert(
-            "fact".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Number(n) => {
-                        if n < 0 {
-                            return Err("Factorial of a negative number is undefined".to_string());
-                        }
-                        let mut result = 1;
-                        for i in 1..=n {
-                            result *= i;
-                        }
-                        Ok(ResultValue::Number(result))
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for taking modular of a number by another number
-        builtins.insert(
-            "mod".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Number(a), ResultValue::Number(b)) => {
-                        if b == 0 {
-                            return Err("Division by zero".to_string());
-                        }
-                        Ok(ResultValue::Number(a % b))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for waiting for a number of seconds
-        builtins.insert(
-            "wait".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Number(n) => {
-                        std::thread::sleep(std::time::Duration::from_millis(n as u64));
-                        Ok(ResultValue::Bool(false))
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for creating arrays of integers
-        builtins.insert(
-            "intArray".to_string(),
-            ResultValue::Func(|args| {
-                let mut result = Vec::new();
-                for arg in args {
-                    match arg {
-                        ResultValue::Number(n) => result.push(ResultValue::Number(n)),
-                        _ => return Err("Invalid argument".to_string()),
-                    }
-                }
-                Ok(ResultValue::Vec(result))
-            }),
-        );
-
-        // Built-in function for creating arrays of strings
-        builtins.insert(
-            "stringArray".to_string(),
-            ResultValue::Func(|args| {
-                let mut result = Vec::new();
-                for arg in args {
-                    match arg {
-                        ResultValue::String(s) => result.push(ResultValue::String(s)),
-                        _ => return Err("Invalid argument".to_string()),
-                    }
-                }
-                Ok(ResultValue::Vec(result))
-            }),
-        );
-
-        // Built-in function for getting the length of an array
-        builtins.insert(
-            "len".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(v) => Ok(ResultValue::Number(v.len() as i64)),
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for getting the element at an index in an array
-        builtins.insert(
-            "get".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Vec(v), ResultValue::Number(i)) => {
-                        if i < 0 || i as usize >= v.len() {
-                            return Err("Index out of bounds".to_string());
-                        }
-                        Ok(v[i as usize].clone())
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for setting the element at an index in an array
-        builtins.insert(
-            "set".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 3 {
-                    return Err("Expected exactly 3 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone(), args[2].clone()) {
-                    (ResultValue::Vec(mut v), ResultValue::Number(i), value) => {
-                        if i < 0 || i as usize >= v.len() {
-                            return Err("Index out of bounds".to_string());
-                        }
-                        v[i as usize] = value;
-                        Ok(ResultValue::Vec(v))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for appending an element to an array
-        builtins.insert(
-            "append".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Vec(mut v), value) => {
-                        v.push(value);
-                        Ok(ResultValue::Vec(v))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for removing an element at an index in an array
-        builtins.insert(
-            "remove".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Vec(mut v), ResultValue::Number(i)) => {
-                        if i < 0 || i as usize >= v.len() {
-                            return Err("Index out of bounds".to_string());
-                        }
-                        v.remove(i as usize);
-                        Ok(ResultValue::Vec(v))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for reversing an array
-        builtins.insert(
-            "rev".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(mut v) => {
-                        v.reverse();
-                        Ok(ResultValue::Vec(v))
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for sorting an array
-        builtins.insert(
-            "sort".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(mut v) => {
-                        v.sort_by(|a, b| match (a, b) {
-                            (ResultValue::Number(a), ResultValue::Number(b)) => a.cmp(b),
-                            _ => panic!("Invalid argument"),
-                        });
-                        Ok(ResultValue::Vec(v))
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for checking if an array is empty
-        builtins.insert(
-            "empty?".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(v) => Ok(ResultValue::Bool(v.is_empty())),
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for getting the head of an array
-        builtins.insert(
-            "head".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(v) => {
-                        if v.is_empty() {
-                            return Err("Array is empty".to_string());
-                        }
-                        Ok(v[0].clone())
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for getting the tail of an array
-        builtins.insert(
-            "tail".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(v) => {
-                        if v.is_empty() {
-                            return Err("Array is empty".to_string());
-                        }
-                        Ok(ResultValue::Vec(v[1..].to_vec()))
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for getting the last element of an array
-        builtins.insert(
-            "last".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(v) => {
-                        if v.is_empty() {
-                            return Err("Array is empty".to_string());
-                        }
-                        Ok(v[v.len() - 1].clone())
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for applying a function to each element of an array
-        builtins.insert(
-            "map".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Lambda(params, body, lambda_env), ResultValue::Vec(v)) => {
-                        let mut result = Vec::new();
-                        for arg in v {
-                            let mut new_env = Env::new_with_parent(lambda_env.clone());
-                            new_env.insert_vars(params[0].clone(), arg);
-                            result.push(eval_expr(*body.clone(), &mut new_env)?);
-                        }
-                        Ok(ResultValue::Vec(result))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for filtering an array
-        builtins.insert(
-            "filter".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 2 {
-                    return Err("Expected exactly 2 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone()) {
-                    (ResultValue::Lambda(params, body, lambda_env), ResultValue::Vec(v)) => {
-                        let mut result = Vec::new();
-                        for arg in v {
-                            let mut new_env = Env::new_with_parent(lambda_env.clone());
-                            new_env.insert_vars(params[0].clone(), arg.clone());
-                            if eval_expr(*body.clone(), &mut new_env)?.to_string() == "true" {
-                                result.push(arg);
-                            }
-                        }
-                        Ok(ResultValue::Vec(result))
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for folding an array
-        builtins.insert(
-            "fold".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 3 {
-                    return Err("Expected exactly 3 arguments".to_string());
-                }
-
-                match (args[0].clone(), args[1].clone(), args[2].clone()) {
-                    (ResultValue::Lambda(params, body, lambda_env), acc, ResultValue::Vec(v)) => {
-                        let mut result = acc;
-                        for arg in v {
-                            let mut new_env = Env::new_with_parent(lambda_env.clone());
-                            new_env.insert_vars(params[0].clone(), result.clone());
-                            new_env.insert_vars(params[1].clone(), arg);
-                            result = eval_expr(*body.clone(), &mut new_env)?;
-                        }
-                        Ok(result)
-                    }
-                    _ => Err("Invalid arguments".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for summing an array
-        builtins.insert(
-            "sum".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(v) => {
-                        let mut result = 0;
-                        for arg in v {
-                            match arg {
-                                ResultValue::Number(n) => result += n,
-                                _ => return Err("Invalid argument".to_string()),
-                            }
-                        }
-                        Ok(ResultValue::Number(result))
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for finding the product of an array
-        builtins.insert(
-            "product".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(v) => {
-                        let mut result = 1;
-                        for arg in v {
-                            match arg {
-                                ResultValue::Number(n) => result *= n,
-                                _ => return Err("Invalid argument".to_string()),
-                            }
-                        }
-                        Ok(ResultValue::Number(result))
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for getting median of an array
-        builtins.insert(
-            "median".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(mut v) => {
-                        v.sort_by(|a, b| match (a, b) {
-                            (ResultValue::Number(a), ResultValue::Number(b)) => a.cmp(b),
-                            _ => panic!("Invalid argument"),
-                        });
-                        let len = v.len();
-                        if len % 2 == 0 {
-                            let mid = len / 2;
-                            match (v[mid - 1].clone(), v[mid].clone()) {
-                                (ResultValue::Number(a), ResultValue::Number(b)) => {
-                                    Ok(ResultValue::Number((a + b) / 2))
-                                }
-                                _ => Err("Invalid argument".to_string()),
-                            }
-                        } else {
-                            match v[len / 2].clone() {
-                                ResultValue::Number(n) => Ok(ResultValue::Number(n)),
-                                _ => Err("Invalid argument".to_string()),
-                            }
-                        }
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for getting mean of an array
-        builtins.insert(
-            "mean".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(v) => {
-                        let mut sum = 0;
-                        let mut count = 0;
-                        for arg in v {
-                            match arg {
-                                ResultValue::Number(n) => {
-                                    sum += n;
-                                    count += 1;
-                                }
-                                _ => return Err("Invalid argument".to_string()),
-                            }
-                        }
-                        if count == 0 {
-                            return Err("Array is empty".to_string());
-                        }
-                        Ok(ResultValue::Number(sum / count as i64))
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-        
-        // Built-in function for getting max value of an array
-        builtins.insert(
-            "maxArray".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(v) => {
-                        let mut max = std::i64::MIN;
-                        for arg in v {
-                            match arg {
-                                ResultValue::Number(n) => {
-                                    if n > max {
-                                        max = n;
-                                    }
-                                }
-                                _ => return Err("Invalid argument".to_string()),
-                            }
-                        }
-                        if max == std::i64::MIN {
-                            return Err("Array is empty".to_string());
-                        }
-                        Ok(ResultValue::Number(max))
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
-
-        // Built-in function for getting min value of an array
-        builtins.insert(
-            "minArray".to_string(),
-            ResultValue::Func(|args| {
-                if args.len() != 1 {
-                    return Err("Expected exactly 1 argument".to_string());
-                }
-
-                match args[0].clone() {
-                    ResultValue::Vec(v) => {
-                        let mut min = std::i64::MAX;
-                        for arg in v {
-                            match arg {
-                                ResultValue::Number(n) => {
-                                    if n < min {
-                                        min = n;
-                                    }
-                                }
-                                _ => return Err("Invalid argument".to_string()),
-                            }
-                        }
-                        if min == std::i64::MAX {
-                            return Err("Array is empty".to_string());
-                        }
-                        Ok(ResultValue::Number(min))
-                    }
-                    _ => Err("Invalid argument".to_string()),
-                }
-            }),
-        );
+        add_builtins(&mut builtins);
 
         Self {
             vars,
@@ -939,6 +141,808 @@ impl Env {
                 .and_then(|parent| parent.get_builtins(name))
         })
     }
+}
+
+fn add_builtins(builtins: &mut HashMap<String, ResultValue>) {
+    // Built-in function for addition
+    builtins.insert(
+        "add".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Number(a + b))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for subtraction
+    builtins.insert(
+        "sub".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Number(a - b))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for multiplication
+    builtins.insert(
+        "mul".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Number(a * b))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for integer division
+    builtins.insert(
+        "div".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    if b == 0 {
+                        Err("Division by zero".to_string())
+                    } else {
+                        Ok(ResultValue::Number(a / b))
+                    }
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for exponentiation
+    builtins.insert(
+        "pow".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Number(a.pow(b as u32)))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for checking if a number is zero
+    builtins.insert(
+        "zero?".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Number(n) => Ok(ResultValue::Bool(n == 0)),
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for equality
+    builtins.insert(
+        "eq".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Bool(a == b))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for less than
+    builtins.insert(
+        "<".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Bool(a < b))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for greater than
+    builtins.insert(
+        ">".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Bool(a > b))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for greater than or equal to
+    builtins.insert(
+        ">=".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Bool(a >= b))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for less than or equal to
+    builtins.insert(
+        "<=".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Bool(a <= b))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for printing a statement
+    builtins.insert(
+        "print".to_string(),
+        ResultValue::Func(|args| {
+            for arg in args {
+                print!("{} ", arg);
+            }
+            println!();
+
+            Ok(ResultValue::Bool(false))
+        }),
+    );
+
+    // Built-in function for absolute value
+    builtins.insert(
+        "abs".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Number(n) => Ok(ResultValue::Number(n.abs())),
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for finding the maximum of two numbers
+    builtins.insert(
+        "max".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Number(a.max(b)))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for finding the minimum of two numbers
+    builtins.insert(
+        "min".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    Ok(ResultValue::Number(a.min(b)))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for finding the factorial of a number
+    builtins.insert(
+        "fact".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Number(n) => {
+                    if n < 0 {
+                        return Err("Factorial of a negative number is undefined".to_string());
+                    }
+                    let mut result = 1;
+                    for i in 1..=n {
+                        result *= i;
+                    }
+                    Ok(ResultValue::Number(result))
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for taking modular of a number by another number
+    builtins.insert(
+        "mod".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Number(a), ResultValue::Number(b)) => {
+                    if b == 0 {
+                        return Err("Division by zero".to_string());
+                    }
+                    Ok(ResultValue::Number(a % b))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for waiting for a number of seconds
+    builtins.insert(
+        "wait".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Number(n) => {
+                    std::thread::sleep(std::time::Duration::from_millis(n as u64));
+                    Ok(ResultValue::Bool(false))
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for creating arrays of integers
+    builtins.insert(
+        "intArray".to_string(),
+        ResultValue::Func(|args| {
+            let mut result = Vec::new();
+            for arg in args {
+                match arg {
+                    ResultValue::Number(n) => result.push(ResultValue::Number(n)),
+                    _ => return Err("Invalid argument".to_string()),
+                }
+            }
+            Ok(ResultValue::Vec(result))
+        }),
+    );
+
+    // Built-in function for creating arrays of strings
+    builtins.insert(
+        "stringArray".to_string(),
+        ResultValue::Func(|args| {
+            let mut result = Vec::new();
+            for arg in args {
+                match arg {
+                    ResultValue::String(s) => result.push(ResultValue::String(s)),
+                    _ => return Err("Invalid argument".to_string()),
+                }
+            }
+            Ok(ResultValue::Vec(result))
+        }),
+    );
+
+    // Built-in function for getting the length of an array
+    builtins.insert(
+        "len".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(v) => Ok(ResultValue::Number(v.len() as i64)),
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for getting the element at an index in an array
+    builtins.insert(
+        "get".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Vec(v), ResultValue::Number(i)) => {
+                    if i < 0 || i as usize >= v.len() {
+                        return Err("Index out of bounds".to_string());
+                    }
+                    Ok(v[i as usize].clone())
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for setting the element at an index in an array
+    builtins.insert(
+        "set".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 3 {
+                return Err("Expected exactly 3 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone(), args[2].clone()) {
+                (ResultValue::Vec(mut v), ResultValue::Number(i), value) => {
+                    if i < 0 || i as usize >= v.len() {
+                        return Err("Index out of bounds".to_string());
+                    }
+                    v[i as usize] = value;
+                    Ok(ResultValue::Vec(v))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for appending an element to an array
+    builtins.insert(
+        "append".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Vec(mut v), value) => {
+                    v.push(value);
+                    Ok(ResultValue::Vec(v))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for removing an element at an index in an array
+    builtins.insert(
+        "remove".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Vec(mut v), ResultValue::Number(i)) => {
+                    if i < 0 || i as usize >= v.len() {
+                        return Err("Index out of bounds".to_string());
+                    }
+                    v.remove(i as usize);
+                    Ok(ResultValue::Vec(v))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for reversing an array
+    builtins.insert(
+        "rev".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(mut v) => {
+                    v.reverse();
+                    Ok(ResultValue::Vec(v))
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for sorting an array
+    builtins.insert(
+        "sort".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(mut v) => {
+                    v.sort_by(|a, b| match (a, b) {
+                        (ResultValue::Number(a), ResultValue::Number(b)) => a.cmp(b),
+                        _ => panic!("Invalid argument"),
+                    });
+                    Ok(ResultValue::Vec(v))
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for checking if an array is empty
+    builtins.insert(
+        "empty?".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(v) => Ok(ResultValue::Bool(v.is_empty())),
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for getting the head of an array
+    builtins.insert(
+        "head".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(v) => {
+                    if v.is_empty() {
+                        return Err("Array is empty".to_string());
+                    }
+                    Ok(v[0].clone())
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for getting the tail of an array
+    builtins.insert(
+        "tail".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(v) => {
+                    if v.is_empty() {
+                        return Err("Array is empty".to_string());
+                    }
+                    Ok(ResultValue::Vec(v[1..].to_vec()))
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for getting the last element of an array
+    builtins.insert(
+        "last".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(v) => {
+                    if v.is_empty() {
+                        return Err("Array is empty".to_string());
+                    }
+                    Ok(v[v.len() - 1].clone())
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for applying a function to each element of an array
+    builtins.insert(
+        "map".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Lambda(params, body, lambda_env), ResultValue::Vec(v)) => {
+                    let mut result = Vec::new();
+                    for arg in v {
+                        let mut new_env = Env::new_with_parent(lambda_env.clone());
+                        new_env.insert_vars(params[0].clone(), arg);
+                        result.push(eval_expr(*body.clone(), &mut new_env)?);
+                    }
+                    Ok(ResultValue::Vec(result))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for filtering an array
+    builtins.insert(
+        "filter".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 2 {
+                return Err("Expected exactly 2 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone()) {
+                (ResultValue::Lambda(params, body, lambda_env), ResultValue::Vec(v)) => {
+                    let mut result = Vec::new();
+                    for arg in v {
+                        let mut new_env = Env::new_with_parent(lambda_env.clone());
+                        new_env.insert_vars(params[0].clone(), arg.clone());
+                        if eval_expr(*body.clone(), &mut new_env)?.to_string() == "true" {
+                            result.push(arg);
+                        }
+                    }
+                    Ok(ResultValue::Vec(result))
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for folding an array
+    builtins.insert(
+        "fold".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 3 {
+                return Err("Expected exactly 3 arguments".to_string());
+            }
+
+            match (args[0].clone(), args[1].clone(), args[2].clone()) {
+                (ResultValue::Lambda(params, body, lambda_env), acc, ResultValue::Vec(v)) => {
+                    let mut result = acc;
+                    for arg in v {
+                        let mut new_env = Env::new_with_parent(lambda_env.clone());
+                        new_env.insert_vars(params[0].clone(), result.clone());
+                        new_env.insert_vars(params[1].clone(), arg);
+                        result = eval_expr(*body.clone(), &mut new_env)?;
+                    }
+                    Ok(result)
+                }
+                _ => Err("Invalid arguments".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for summing an array
+    builtins.insert(
+        "sum".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(v) => {
+                    let mut result = 0;
+                    for arg in v {
+                        match arg {
+                            ResultValue::Number(n) => result += n,
+                            _ => return Err("Invalid argument".to_string()),
+                        }
+                    }
+                    Ok(ResultValue::Number(result))
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for finding the product of an array
+    builtins.insert(
+        "product".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(v) => {
+                    let mut result = 1;
+                    for arg in v {
+                        match arg {
+                            ResultValue::Number(n) => result *= n,
+                            _ => return Err("Invalid argument".to_string()),
+                        }
+                    }
+                    Ok(ResultValue::Number(result))
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for getting median of an array
+    builtins.insert(
+        "median".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(mut v) => {
+                    v.sort_by(|a, b| match (a, b) {
+                        (ResultValue::Number(a), ResultValue::Number(b)) => a.cmp(b),
+                        _ => panic!("Invalid argument"),
+                    });
+                    let len = v.len();
+                    if len % 2 == 0 {
+                        let mid = len / 2;
+                        match (v[mid - 1].clone(), v[mid].clone()) {
+                            (ResultValue::Number(a), ResultValue::Number(b)) => {
+                                Ok(ResultValue::Number((a + b) / 2))
+                            }
+                            _ => Err("Invalid argument".to_string()),
+                        }
+                    } else {
+                        match v[len / 2].clone() {
+                            ResultValue::Number(n) => Ok(ResultValue::Number(n)),
+                            _ => Err("Invalid argument".to_string()),
+                        }
+                    }
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for getting mean of an array
+    builtins.insert(
+        "mean".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(v) => {
+                    let mut sum = 0;
+                    let mut count = 0;
+                    for arg in v {
+                        match arg {
+                            ResultValue::Number(n) => {
+                                sum += n;
+                                count += 1;
+                            }
+                            _ => return Err("Invalid argument".to_string()),
+                        }
+                    }
+                    if count == 0 {
+                        return Err("Array is empty".to_string());
+                    }
+                    Ok(ResultValue::Number(sum / count as i64))
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+        
+    // Built-in function for getting max value of an array
+    builtins.insert(
+        "maxArray".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(v) => {
+                    let mut max = std::i64::MIN;
+                    for arg in v {
+                        match arg {
+                            ResultValue::Number(n) => {
+                                if n > max {
+                                    max = n;
+                                }
+                            }
+                            _ => return Err("Invalid argument".to_string()),
+                        }
+                    }
+                    if max == std::i64::MIN {
+                        return Err("Array is empty".to_string());
+                    }
+                    Ok(ResultValue::Number(max))
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
+
+    // Built-in function for getting min value of an array
+    builtins.insert(
+        "minArray".to_string(),
+        ResultValue::Func(|args| {
+            if args.len() != 1 {
+                return Err("Expected exactly 1 argument".to_string());
+            }
+
+            match args[0].clone() {
+                ResultValue::Vec(v) => {
+                    let mut min = std::i64::MAX;
+                    for arg in v {
+                        match arg {
+                            ResultValue::Number(n) => {
+                                if n < min {
+                                    min = n;
+                                }
+                            }
+                            _ => return Err("Invalid argument".to_string()),
+                        }
+                    }
+                    if min == std::i64::MAX {
+                        return Err("Array is empty".to_string());
+                    }
+                    Ok(ResultValue::Number(min))
+                }
+                _ => Err("Invalid argument".to_string()),
+            }
+        }),
+    );
 }
 
 // Evaluate an expression in the given environment
