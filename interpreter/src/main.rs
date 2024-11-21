@@ -123,12 +123,12 @@ impl Env {
     }
 
     // Update a variable in the environment where it was originally defined (dereferencing the Box)
-    fn update_vars_deref(&mut self, name: &str, value: ResultValue) -> Result<(), String> {
+    fn update_vars(&mut self, name: &str, value: ResultValue) -> Result<(), String> {
         if let Some(cell) = self.vars.get_mut(name) {
             *cell.borrow_mut() = value;
             Ok(())
         } else if let Some(ref mut parent) = self.parent {
-            parent.update_vars_deref(name, value)
+            parent.update_vars(name, value)
         } else {
             Err("Variable not found".to_string())
         }
@@ -1061,7 +1061,7 @@ fn eval_expr(expr: Expr, env: &mut Env) -> Result<ResultValue, String> {
             };
             let value = eval_expr(*value, env)?;
             // Update the variable in the environment where it was originally defined (dereferencing the Box)
-            env.update_vars_deref(&name, value.clone())?;
+            env.update_vars(&name, value.clone())?;
             Ok(value)
         }
     }
